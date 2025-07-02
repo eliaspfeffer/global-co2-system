@@ -81,7 +81,7 @@ const Scene: React.FC = () => {
             outlineColor: Cesium.Color.WHITE,
             outlineWidth: 2,
             heightReference: Cesium.HeightReference.NONE,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            // Remove disableDepthTestDistance so Earth occludes satellites
           },
           label: {
             text: `SAT-${i + 1}`,
