@@ -3,60 +3,52 @@
 This document provides guidance for AI agents working on this project.
 
 ### Project Overview
-The goal is to create a gamified visualization of a global CO2 emissions cap-and-trade system. Users can simulate scenarios, adjust country emissions, and see conceptual financial transactions (deposits, payments, penalties) and a voting mechanism. The visual style should be cartoonish and clear, emphasizing the educational aspect of the concept. The project is built with Next.js, Three.js, Zustand, and Tailwind CSS, for deployment on Vercel.
+The goal is to create a gamified visualization of a global CO2 emissions cap-and-trade system. Users can simulate scenarios, adjust country emissions, see conceptual financial transactions, and a voting mechanism. Key concepts include a shrinking global CO2 budget over time and incentives for compliance/monitoring. The visual style is cartoonish and clear. Built with Next.js, Three.js, Zustand, and Tailwind CSS for Vercel deployment.
 
 ### Key Technologies
-- **Next.js (React)**: Frontend framework (App Router).
-- **Three.js**: For 3D visualization of Earth, satellites, and country markers.
-- **Zustand**: State management for all dynamic application data.
-- **Tailwind CSS**: Styling, aiming for a clear, dark, and somewhat cartoonish theme.
-- **Vercel**: Target deployment platform.
+- **Next.js (React)**: App Router.
+- **Three.js**: For 3D visualization (Earth, satellites, markers).
+- **Zustand**: Global state management.
+- **Tailwind CSS**: Styling.
+- **Vercel**: Deployment.
 
 ### Development Guidelines
-1.  **Follow the Plan**: Adhere to the established development plan. If deviations are necessary, update the plan and inform the user.
-2.  **Component Structure**:
-    *   `src/components/visualization/`: Three.js related components (`Scene.tsx`, `Earth.tsx`). `Scene.tsx` is the main entry point for the 3D view.
-    *   `src/components/ui/`: React UI components for controls and information display (`Controls.tsx`, `CountryPanel.tsx`, `MarketplacePanel.tsx`, `VotingPanel.tsx`).
-    *   `src/app/`: Next.js App Router structure (`page.tsx`, `layout.tsx`, `globals.css`).
-    *   `src/store/store.ts`: Zustand store definition, including state interfaces and actions.
-    *   `src/data/countries.json`: Mock data for initial country states.
-    *   `public/assets/`: Intended for static assets like icons or textures (currently unused).
-3.  **State Management (Zustand)**:
-    *   The store (`store.ts`) is the single source of truth for countries' data, market offers, vote proposals, selected country, and current simulation year.
-    *   Actions are defined within the store to manipulate state predictably.
-    *   Ensure UI components correctly subscribe to relevant parts of the store and use actions for updates.
-4.  **Styling (Tailwind CSS)**:
-    *   Utilize Tailwind CSS utility classes for all styling.
-    *   Maintain a consistent dark theme (primarily `slate` grays) with accent colors (e.g., `sky`, `emerald`, `orange`, `red`, `purple`) for different UI sections or states.
-    *   Aim for clarity, good contrast, and a slightly playful/cartoonish feel (e.g., rounded corners, subtle hover effects).
-    *   Custom scrollbar styles are defined in `globals.css`.
-5.  **3D Visualization (Three.js)**:
-    *   Earth model uses `MeshToonMaterial` for a non-realistic, cartoonish look. Includes a shader-based atmosphere.
-    *   Satellites are simple colored spheres with `MeshToonMaterial` and randomized orbits.
-    *   A dynamic marker on the Earth indicates the selected country, changing color based on CO2 emission status.
-    *   Ensure 3D scene interactions (camera controls) are smooth.
-6.  **Data Flow**:
-    *   Initial country data from `countries.json`.
-    *   User interactions in UI panels call Zustand actions.
-    *   Zustand updates its state.
-    *   UI components and the 3D scene reactively update based on the new state.
-7.  **Conceptual Nature**: The blockchain/crypto aspects (deposits, payments, penalties) are purely conceptual and simulated within the application's logic. No actual blockchain integration. Focus on visualizing the *idea* of these mechanisms.
-8.  **Commits**: Make small, logical commits. Write clear and concise commit messages. (Managed by the controlling agent/user).
-9.  **Testing**: Manual testing of all features across different scenarios is crucial. Check for logical consistency and visual correctness. (Primarily user's responsibility after deployment).
-10. **Vercel Deployment**: The project is set up as a standard Next.js app, which Vercel can typically build and deploy automatically.
+1.  **Component Structure**:
+    *   `src/components/visualization/`: `Scene.tsx`, `Earth.tsx` (layered Earth with procedural continents/clouds).
+    *   `src/components/ui/`: `Controls.tsx`, `CountryPanel.tsx`, `MarketplacePanel.tsx`, `VotingPanel.tsx`, `GlobalStatsPanel.tsx`.
+    *   `src/app/`: Next.js App Router structure.
+    *   `src/store/store.ts`: Zustand store, including state interfaces and actions.
+    *   `src/data/countries.json`: Initial country data.
+2.  **State Management (Zustand - `store.ts`)**:
+    *   **Key State Slices**:
+        *   `countries: Country[]`: Includes `originalInitialAllowance` for tracking base allowance before annual reductions.
+        *   `selectedCountryId: string | null`.
+        *   `marketOffers: MarketOffer[]`.
+        *   `activeVoteProposals: VoteProposal[]`.
+        *   `currentYear: number`.
+        *   `currentGlobalBudget: number`: Sum of all countries' current (potentially shrunk) `initialCo2Allowance`. Updated annually and after trades.
+        *   `satelliteNetworkFund: { bitcoin: number, gold: number }`: Accumulates a percentage of seized penalties.
+    *   **Key Actions**:
+        *   `adjustEmissions`: Updates country emissions.
+        *   `postOffer`, `acceptTrade`: Manage CO2 allowance market. `acceptTrade` now also updates `currentGlobalBudget`.
+        *   `initiatePenaltyVote`: Triggers vote if country in deficit doesn't settle.
+        *   `castVote`: Records votes, tallies, executes penalties (reducing target's deposits and crediting `satelliteNetworkFund`).
+        *   `fastForwardTime`: Increments year, increases all countries' emissions, shrinks each country's `initialCo2Allowance` (with a floor), and recalculates `currentGlobalBudget`.
+        *   `resetScenario`: Resets all relevant state to initial conditions, including `originalInitialAllowance` and `currentGlobalBudget`.
+3.  **Styling (Tailwind CSS)**: Maintain cohesive dark theme (`slate` with accents). Emphasize clarity, good contrast, and interactive elements (hover effects, rounded corners). Custom scrollbar in `globals.css`.
+4.  **3D Visualization (Three.js)**:
+    *   `Earth.tsx`: Creates a layered Earth (oceans, procedural stylized continents, procedural stylized clouds) using `MeshToonMaterial`. Includes atmosphere glow.
+    *   `Scene.tsx`: Manages Earth rotation, independent cloud rotation, satellite orbits, and dynamic country marker.
+5.  **Clarity and User Feedback**:
+    *   `GlobalStatsPanel.tsx` provides an overview of the global CO2 situation and satellite fund.
+    *   `CountryPanel.tsx` has enhanced warnings for deficit countries at risk of voting (pulsing button, informational text) and visual state for active votes.
+    *   `VotingPanel.tsx` clearly states the reason for vote proposals.
+    *   `alert()` is used for important notifications; consider a toast system for future polish.
+6.  **Conceptual Nature**: All financial/blockchain aspects are simulated.
 
-### Specific Instructions & Key State Variables
-*   **`countries.json` fields**: `id`, `name`, `initialCo2Allowance`, `currentCo2Emissions`, `conceptualBitcoinDeposit`, `conceptualGoldDeposit`, `position: { lat, lon }`.
-*   **`store.ts` - Key State Slices**:
-    *   `countries: Country[]`: Array of country objects, including their dynamic states.
-    *   `selectedCountryId: string | null`: ID of the currently selected country.
-    *   `marketOffers: MarketOffer[]`: List of active CO2 allowance offers.
-    *   `activeVoteProposals: VoteProposal[]`: List of ongoing or concluded penalty votes.
-    *   `currentYear: number`: The current year in the simulation.
-*   **`store.ts` - Key Actions**:
-    *   `adjustEmissions`: Updates a country's CO2 emissions.
-    *   `postOffer`, `acceptTrade`: Manage marketplace transactions.
-    *   `initiatePenaltyVote`, `castVote`: Manage the voting process and penalty execution.
-    *   `fastForwardTime`, `resetScenario`: Control the simulation flow.
-
-Remember to always ask for clarification if any part of the task or these guidelines is unclear. Prioritize clarity and the educational goal of the simulation.
+### Specific Instructions for Future Development
+*   When adding new features, ensure state changes are managed through Zustand actions.
+*   Maintain the "cartoonish and clear" visual style.
+*   Prioritize user understanding of the simulation's mechanics.
+*   If adding complex visual assets (textures, models), provide clear instructions on how they should be integrated.
+*   Update this document and `README.md` with any significant changes.
