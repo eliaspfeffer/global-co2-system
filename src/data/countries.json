@@ -42,6 +42,15 @@
     "currentCo2Emissions": 280,
     "conceptualBitcoinDeposit": 25,
     "conceptualGoldDeposit": 1200,
-    "position": { "lat": -14.2350, "lon": -51.9253 }
+    "position": { "lat": -14.235, "lon": -51.9253 }
+  },
+  {
+    "id": "africa",
+    "name": "Africa",
+    "initialCo2Allowance": 600,
+    "currentCo2Emissions": 480,
+    "conceptualBitcoinDeposit": 35,
+    "conceptualGoldDeposit": 1600,
+    "position": { "lat": -0.0236, "lon": 37.9062 }
   }
 ]

@@ -50,6 +50,26 @@ export interface VoteProposal {
   voteTalliedAt?: number;
 }
 
+export interface SatelliteCompany {
+  id: string;
+  name: string;
+  satelliteCount: number;
+  totalEarnings: number;
+  recentDetections: {
+    countryId: string;
+    amount: number;
+    timestamp: number;
+    reward: number;
+  }[];
+  investmentCost: number; // Cost to launch each satellite
+}
+
+export interface SatelliteCoverage {
+  countryId: string;
+  monitoringSatellites: string[]; // Array of satellite company IDs currently monitoring this country
+  coverageLevel: number; // 0-1 scale representing monitoring transparency
+}
+
 interface AppState {
   countries: Country[];
   selectedCountryId: string | null;
@@ -58,6 +78,8 @@ interface AppState {
   currentYear: number;
   currentGlobalBudget: number;
   satelliteNetworkFund: { bitcoin: number; gold: number };
+  satelliteCompanies: SatelliteCompany[];
+  satelliteCoverage: SatelliteCoverage[];
 
   selectCountry: (countryId: string | null) => void;
   adjustEmissions: (countryId: string, newEmissionLevel: number) => void;
@@ -72,6 +94,12 @@ interface AppState {
   ) => void;
   fastForwardTime: () => void;
   resetScenario: () => void;
+  launchSatellite: (companyId: string) => void;
+  calculateSatelliteCoverage: () => void;
+  distributeSatelliteRewards: (
+    countryId: string,
+    excessEmissions: number
+  ) => void;
 }
 
 export const selectCurrentGlobalEmissions = (state: AppState) =>
@@ -84,13 +112,68 @@ const MAJORITY_THRESHOLD = 2 / 3;
 const SATELLITE_FUND_PERCENTAGE = 0.1;
 const ANNUAL_ALLOWANCE_REDUCTION_PERCENTAGE = 0.01; // 1% reduction of current allowance per year
 const MIN_ALLOWANCE_FLOOR_PERCENTAGE_OF_ORIGINAL = 0.2;
+const SATELLITE_LAUNCH_COST = 15; // Bitcoin cost to launch one satellite
+const PENALTY_PERCENTAGE_TO_SATELLITES = 0.3; // 30% of excess emission penalties go to satellite companies
 
 export const useAppStore = create<AppState>((set, get) => {
   const initialCountries = deepCopyAndPrepareInitialCountries();
   const initialGlobalBudgetValue =
     calculateCurrentSumOfAllowances(initialCountries);
 
-  return {
+  // Initialize satellite companies
+  const initialSatelliteCompanies: SatelliteCompany[] = [
+    {
+      id: "skynet",
+      name: "SkyNet Monitoring",
+      satelliteCount: 1,
+      totalEarnings: 0,
+      recentDetections: [],
+      investmentCost: SATELLITE_LAUNCH_COST,
+    },
+    {
+      id: "cosmos",
+      name: "Cosmos Watch",
+      satelliteCount: 1,
+      totalEarnings: 0,
+      recentDetections: [],
+      investmentCost: SATELLITE_LAUNCH_COST,
+    },
+    {
+      id: "orbit",
+      name: "Orbit Guard",
+      satelliteCount: 1,
+      totalEarnings: 0,
+      recentDetections: [],
+      investmentCost: SATELLITE_LAUNCH_COST,
+    },
+    {
+      id: "space",
+      name: "Space Monitor Co",
+      satelliteCount: 1,
+      totalEarnings: 0,
+      recentDetections: [],
+      investmentCost: SATELLITE_LAUNCH_COST,
+    },
+    {
+      id: "earth",
+      name: "Earth Watch Ltd",
+      satelliteCount: 1,
+      totalEarnings: 0,
+      recentDetections: [],
+      investmentCost: SATELLITE_LAUNCH_COST,
+    },
+  ];
+
+  // Initialize satellite coverage for each country
+  const initialSatelliteCoverage: SatelliteCoverage[] = initialCountries.map(
+    (country) => ({
+      countryId: country.id,
+      monitoringSatellites: [], // Will be calculated dynamically
+      coverageLevel: 0.5, // Initial 50% coverage
+    })
+  );
+
+  const store = {
     countries: initialCountries,
     selectedCountryId: null,
     marketOffers: [],
@@ -98,21 +181,53 @@ export const useAppStore = create<AppState>((set, get) => {
     currentYear: 2024,
     currentGlobalBudget: initialGlobalBudgetValue,
     satelliteNetworkFund: { bitcoin: 0, gold: 0 },
+    satelliteCompanies: initialSatelliteCompanies,
+    satelliteCoverage: initialSatelliteCoverage,
 
-    selectCountry: (countryId) => set({ selectedCountryId: countryId }),
+    selectCountry: (countryId: string | null) =>
+      set({ selectedCountryId: countryId }),
 
-    adjustEmissions: (countryId, newEmissionLevel) => {
+    adjustEmissions: (countryId: string, newEmissionLevel: number) => {
+      const state = get();
+      const country = state.countries.find((c) => c.id === countryId);
+      if (!country) return;
+
+      const oldEmissions = country.currentCo2Emissions;
+      const newEmissions = Math.max(0, newEmissionLevel);
+      const allowance = country.initialCo2Allowance;
+
+      // Check if country went from under allowance to over allowance
+      const wasUnderAllowance = oldEmissions <= allowance;
+      const isNowOverAllowance = newEmissions > allowance;
+
       set((state) => ({
-        countries: state.countries.map(
-          (c) =>
-            c.id === countryId
-              ? { ...c, currentCo2Emissions: Math.max(0, newEmissionLevel) }
-              : c // Ensure non-negative
+        countries: state.countries.map((c) =>
+          c.id === countryId ? { ...c, currentCo2Emissions: newEmissions } : c
         ),
       }));
+
+      // If country exceeded allowance, trigger satellite rewards
+      if (isNowOverAllowance) {
+        const excessEmissions = newEmissions - allowance;
+        get().distributeSatelliteRewards(countryId, excessEmissions);
+        get().calculateSatelliteCoverage(); // Update coverage dynamics
+
+        const coverage = get().satelliteCoverage.find(
+          (c) => c.countryId === countryId
+        );
+        if (coverage && coverage.monitoringSatellites.length > 0) {
+          alert(
+            `🛰️ Satellite network detected ${
+              country.name
+            } exceeded CO2 allowance by ${excessEmissions.toLocaleString()} tons! Rewards distributed to ${
+              coverage.monitoringSatellites.length
+            } monitoring satellites.`
+          );
+        }
+      }
     },
 
-    postOffer: (sellerId, amount, pricePerTon) => {
+    postOffer: (sellerId: string, amount: number, pricePerTon: number) => {
       const seller = get().countries.find((c) => c.id === sellerId);
       if (!seller) {
         console.error("Seller not found for posting offer.");
@@ -407,12 +522,72 @@ export const useAppStore = create<AppState>((set, get) => {
           currentGlobalBudget: newGlobalBudget,
         };
       });
+
+      // Recalculate satellite coverage and distribute rewards for countries over limits
+      get().calculateSatelliteCoverage();
+      const state = get();
+      state.countries.forEach((country) => {
+        if (country.currentCo2Emissions > country.initialCo2Allowance) {
+          const excessEmissions =
+            country.currentCo2Emissions - country.initialCo2Allowance;
+          get().distributeSatelliteRewards(country.id, excessEmissions);
+        }
+      });
     },
 
     resetScenario: () => {
       const freshCountries = deepCopyAndPrepareInitialCountries();
       const freshInitialGlobalBudget =
         calculateCurrentSumOfAllowances(freshCountries);
+      const freshSatelliteCompanies: SatelliteCompany[] = [
+        {
+          id: "skynet",
+          name: "SkyNet Monitoring",
+          satelliteCount: 1,
+          totalEarnings: 0,
+          recentDetections: [],
+          investmentCost: SATELLITE_LAUNCH_COST,
+        },
+        {
+          id: "cosmos",
+          name: "Cosmos Watch",
+          satelliteCount: 1,
+          totalEarnings: 0,
+          recentDetections: [],
+          investmentCost: SATELLITE_LAUNCH_COST,
+        },
+        {
+          id: "orbit",
+          name: "Orbit Guard",
+          satelliteCount: 1,
+          totalEarnings: 0,
+          recentDetections: [],
+          investmentCost: SATELLITE_LAUNCH_COST,
+        },
+        {
+          id: "space",
+          name: "Space Monitor Co",
+          satelliteCount: 1,
+          totalEarnings: 0,
+          recentDetections: [],
+          investmentCost: SATELLITE_LAUNCH_COST,
+        },
+        {
+          id: "earth",
+          name: "Earth Watch Ltd",
+          satelliteCount: 1,
+          totalEarnings: 0,
+          recentDetections: [],
+          investmentCost: SATELLITE_LAUNCH_COST,
+        },
+      ];
+      const freshSatelliteCoverage: SatelliteCoverage[] = freshCountries.map(
+        (country) => ({
+          countryId: country.id,
+          monitoringSatellites: [],
+          coverageLevel: 0.5,
+        })
+      );
       set({
         countries: freshCountries,
         selectedCountryId: null,
@@ -421,8 +596,123 @@ export const useAppStore = create<AppState>((set, get) => {
         currentYear: 2024,
         currentGlobalBudget: freshInitialGlobalBudget,
         satelliteNetworkFund: { bitcoin: 0, gold: 0 },
+        satelliteCompanies: freshSatelliteCompanies,
+        satelliteCoverage: freshSatelliteCoverage,
       });
       alert("Scenario has been reset to initial conditions.");
     },
+
+    launchSatellite: (companyId) => {
+      const state = get();
+      const company = state.satelliteCompanies.find((c) => c.id === companyId);
+      if (!company) return;
+
+      // Check if satellite fund has enough bitcoins
+      if (state.satelliteNetworkFund.bitcoin < SATELLITE_LAUNCH_COST) {
+        alert(
+          `Insufficient funds in satellite network fund. Need ${SATELLITE_LAUNCH_COST} Bitcoin, have ${state.satelliteNetworkFund.bitcoin}`
+        );
+        return;
+      }
+
+      set((state) => ({
+        satelliteCompanies: state.satelliteCompanies.map((c) =>
+          c.id === companyId
+            ? { ...c, satelliteCount: c.satelliteCount + 1 }
+            : c
+        ),
+        satelliteNetworkFund: {
+          ...state.satelliteNetworkFund,
+          bitcoin: state.satelliteNetworkFund.bitcoin - SATELLITE_LAUNCH_COST,
+        },
+      }));
+
+      // Recalculate coverage after new satellite launch
+      get().calculateSatelliteCoverage();
+      alert(
+        `${company.name} launched a new satellite! Total satellites: ${
+          company.satelliteCount + 1
+        }`
+      );
+    },
+
+    calculateSatelliteCoverage: () => {
+      const state = get();
+      const totalSatellites = state.satelliteCompanies.reduce(
+        (sum, company) => sum + company.satelliteCount,
+        0
+      );
+
+      set((state) => ({
+        satelliteCoverage: state.satelliteCoverage.map((coverage) => {
+          // Simulate which satellites are monitoring this country
+          // More satellites = higher chance each company is monitoring
+          const monitoringSatellites = state.satelliteCompanies
+            .filter(
+              (company) =>
+                Math.random() < company.satelliteCount / totalSatellites
+            )
+            .map((company) => company.id);
+
+          // Coverage level increases with more monitoring satellites
+          const coverageLevel = Math.min(
+            0.95,
+            0.3 + monitoringSatellites.length * 0.15
+          );
+
+          return {
+            ...coverage,
+            monitoringSatellites,
+            coverageLevel,
+          };
+        }),
+      }));
+    },
+
+    distributeSatelliteRewards: (countryId, excessEmissions) => {
+      const state = get();
+      const coverage = state.satelliteCoverage.find(
+        (c) => c.countryId === countryId
+      );
+      if (!coverage || coverage.monitoringSatellites.length === 0) return;
+
+      // Calculate penalty amount (simplified: $1 per ton of excess emissions)
+      const totalPenalty = excessEmissions * PENALTY_PERCENTAGE_TO_SATELLITES;
+      const rewardPerSatellite =
+        totalPenalty / coverage.monitoringSatellites.length;
+
+      set((state) => ({
+        satelliteCompanies: state.satelliteCompanies.map((company) => {
+          if (coverage.monitoringSatellites.includes(company.id)) {
+            const detection = {
+              countryId,
+              amount: excessEmissions,
+              timestamp: Date.now(),
+              reward: rewardPerSatellite,
+            };
+
+            return {
+              ...company,
+              totalEarnings: company.totalEarnings + rewardPerSatellite,
+              recentDetections: [
+                ...company.recentDetections.slice(-4),
+                detection,
+              ], // Keep last 5 detections
+            };
+          }
+          return company;
+        }),
+      }));
+    },
   };
+
+  // Initialize satellite coverage on store creation
+  setTimeout(() => {
+    const state = get();
+    if (state.calculateSatelliteCoverage) {
+      state.calculateSatelliteCoverage();
+    }
+  }, 0);
+
+  return store;
 });
