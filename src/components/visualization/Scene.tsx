@@ -75,33 +75,35 @@ const Scene: React.FC = () => {
         const satellite = viewer.entities.add({
           name: `Satellite-${i + 1}`,
           position: Cesium.Cartesian3.fromDegrees(0, 0, 8000000 + i * 1000000), // Initial position
-          point: {
-            pixelSize: 8,
-            color: satelliteColors[i],
-            outlineColor: Cesium.Color.WHITE,
-            outlineWidth: 2,
-            heightReference: Cesium.HeightReference.NONE,
-            // Remove disableDepthTestDistance so Earth occludes satellites
-          },
           label: {
-            text: `SAT-${i + 1}`,
-            font: "10pt monospace",
-            fillColor: satelliteColors[i],
+            text: "🛰️",
+            font: "24pt Arial",
+            fillColor: Cesium.Color.WHITE,
             outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 1,
+            outlineWidth: 2,
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            pixelOffset: new Cesium.Cartesian2(0, -15),
-            scale: 0.8,
+            verticalOrigin: Cesium.VerticalOrigin.CENTER,
+            horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+            scale: 1.2,
+            heightReference: Cesium.HeightReference.NONE,
           },
           description: `
-            <div style="font-family: monospace;">
-              <h3>Satellite ${i + 1}</h3>
-              <p>Monitoring global CO2 emissions</p>
-              <p>Orbital Speed: ${(0.5 + i * 0.3).toFixed(1)} rev/min</p>
-              <p>Status: Active</p>
-            </div>
-          `,
+             <div style="font-family: monospace; text-align: center;">
+               <h3>🛰️ Satellite ${i + 1}</h3>
+               <p><strong>Status:</strong> Active</p>
+               <p><strong>Mission:</strong> CO2 Monitoring</p>
+               <p><strong>Orbital Speed:</strong> ${(0.4 + i * 0.2).toFixed(
+                 1
+               )} rev/min</p>
+               <p><strong>Altitude:</strong> ${(
+                 7000 +
+                 i * 800
+               ).toLocaleString()} km</p>
+               <p style="color: ${
+                 ["#FFD700", "#00FFFF", "#FF00FF", "#00FF00", "#FFA500"][i]
+               };">● SAT-${i + 1}</p>
+             </div>
+           `,
         });
 
         satellitesRef.current.push(satellite);
@@ -362,8 +364,9 @@ const Scene: React.FC = () => {
         </ul>
         <div className="mt-2 pt-2 border-t border-gray-600 text-xs text-gray-300">
           <div>
-            🛰️ <strong>5 Satellites</strong> monitor CO2 emissions
+            🛰️ <strong>5 Emoji Satellites</strong> in polar orbits
           </div>
+          <div>👁️ Hide behind Earth realistically</div>
           <div>📊 Global Fund starts at 0, grows via trades</div>
         </div>
       </div>
