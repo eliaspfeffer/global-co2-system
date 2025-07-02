@@ -112,16 +112,20 @@ const Scene: React.FC = () => {
         if (cesiumViewerRef.current && !cesiumViewerRef.current.isDestroyed()) {
           const time = Date.now() * 0.001; // Current time in seconds
 
-          // Update satellite positions
+          // Update satellite positions for polar orbits (north-south)
           satellitesRef.current.forEach((satellite, index) => {
-            const speed = 0.5 + index * 0.3; // Different speeds for each satellite
-            const radius = 8000000 + index * 1000000; // Different orbital radii (8-12 million meters)
-            const angle = time * speed + (index * Math.PI * 2) / 5; // Offset each satellite
-            const inclination = (index - 2) * 0.3; // Different orbital inclinations
+            const speed = 0.4 + index * 0.2; // Different orbital speeds
+            const radius = 7000000 + index * 800000; // Different orbital altitudes (7-10.2 million meters)
+            const angle = time * speed + index * Math.PI * 0.4; // Phase offset for each satellite
 
-            const x = Math.cos(angle) * radius;
-            const z = Math.sin(angle) * radius;
-            const y = Math.sin(angle * 2) * radius * 0.1 * inclination; // Slight vertical oscillation
+            // Create polar orbit: satellite goes from north pole to south pole
+            const y = Math.cos(angle) * radius; // North-south movement (pole to pole)
+            const z_base = Math.sin(angle) * radius; // Movement in orbital plane
+
+            // Each satellite has a different orbital plane (rotated around Y-axis)
+            const plane_angle = (index * Math.PI * 2) / 5; // Distribute 5 orbital planes evenly (72° apart)
+            const x = z_base * Math.sin(plane_angle); // East-west component of orbital plane
+            const z = z_base * Math.cos(plane_angle); // Forward-back component of orbital plane
 
             (satellite.position as any) = new Cesium.ConstantProperty(
               Cesium.Cartesian3.fromElements(x, y, z)
