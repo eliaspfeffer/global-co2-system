@@ -10,6 +10,8 @@ const Scene: React.FC = () => {
   const viewerRef = useRef<HTMLDivElement>(null);
   const cesiumViewerRef = useRef<Cesium.Viewer | null>(null);
   const entitiesRef = useRef<Map<string, Cesium.Entity>>(new Map());
+  const satellitesRef = useRef<Cesium.Entity[]>([]);
+  const animationRef = useRef<number | null>(null);
   const [isGlobeLoaded, setIsGlobeLoaded] = useState(false);
 
   const selectedCountryId = useAppStore((state) => state.selectedCountryId);
@@ -59,6 +61,78 @@ const Scene: React.FC = () => {
       cesiumViewerRef.current = viewer;
       setIsGlobeLoaded(true);
 
+      // Add flying satellites
+      const satelliteColors = [
+        Cesium.Color.GOLD,
+        Cesium.Color.CYAN,
+        Cesium.Color.MAGENTA,
+        Cesium.Color.LIME,
+        Cesium.Color.ORANGE,
+      ];
+
+      // Create 5 orbiting satellites
+      for (let i = 0; i < 5; i++) {
+        const satellite = viewer.entities.add({
+          name: `Satellite-${i + 1}`,
+          position: Cesium.Cartesian3.fromDegrees(0, 0, 8000000 + i * 1000000), // Initial position
+          point: {
+            pixelSize: 8,
+            color: satelliteColors[i],
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 2,
+            heightReference: Cesium.HeightReference.NONE,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+          label: {
+            text: `SAT-${i + 1}`,
+            font: "10pt monospace",
+            fillColor: satelliteColors[i],
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 1,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -15),
+            scale: 0.8,
+          },
+          description: `
+            <div style="font-family: monospace;">
+              <h3>Satellite ${i + 1}</h3>
+              <p>Monitoring global CO2 emissions</p>
+              <p>Orbital Speed: ${(0.5 + i * 0.3).toFixed(1)} rev/min</p>
+              <p>Status: Active</p>
+            </div>
+          `,
+        });
+
+        satellitesRef.current.push(satellite);
+      }
+
+      // Start animation loop for smooth satellite movement
+      const animate = () => {
+        if (cesiumViewerRef.current && !cesiumViewerRef.current.isDestroyed()) {
+          const time = Date.now() * 0.001; // Current time in seconds
+
+          // Update satellite positions
+          satellitesRef.current.forEach((satellite, index) => {
+            const speed = 0.5 + index * 0.3; // Different speeds for each satellite
+            const radius = 8000000 + index * 1000000; // Different orbital radii (8-12 million meters)
+            const angle = time * speed + (index * Math.PI * 2) / 5; // Offset each satellite
+            const inclination = (index - 2) * 0.3; // Different orbital inclinations
+
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const y = Math.sin(angle * 2) * radius * 0.1 * inclination; // Slight vertical oscillation
+
+            (satellite.position as any) = new Cesium.ConstantProperty(
+              Cesium.Cartesian3.fromElements(x, y, z)
+            );
+          });
+
+          animationRef.current = requestAnimationFrame(animate);
+        }
+      };
+      animate();
+
       // Handle clicks on empty space to deselect
       viewer.cesiumWidget.screenSpaceEventHandler.setInputAction(
         (event: any) => {
@@ -87,10 +161,15 @@ const Scene: React.FC = () => {
     }
 
     return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
       if (cesiumViewerRef.current && !cesiumViewerRef.current.isDestroyed()) {
         cesiumViewerRef.current.destroy();
         cesiumViewerRef.current = null;
       }
+      satellitesRef.current = [];
     };
   }, [selectCountry]);
 
@@ -268,12 +347,21 @@ const Scene: React.FC = () => {
             • <strong>Select country:</strong> Click markers
           </li>
           <li>
+            • <strong>Click satellites:</strong> See monitoring info
+          </li>
+          <li>
             • <strong>Home view:</strong> Click home button
           </li>
           <li>
             • <strong>Day/Night:</strong> Realistic lighting
           </li>
         </ul>
+        <div className="mt-2 pt-2 border-t border-gray-600 text-xs text-gray-300">
+          <div>
+            🛰️ <strong>5 Satellites</strong> monitor CO2 emissions
+          </div>
+          <div>📊 Global Fund starts at 0, grows via trades</div>
+        </div>
       </div>
 
       {/* Credits */}
