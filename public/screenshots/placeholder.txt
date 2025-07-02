@@ -1,0 +1,43 @@
+🌍 GLOBAL CO2 ACCOUNTABILITY SYSTEM - MAIN INTERFACE
+========================================================
+
+LEFT PANEL:                         CENTER:                    RIGHT PANEL:
+┌─────────────────────┐             ┌─────────────────────┐    ┌─────────────────────┐
+│ 🎮 CONTROLS         │             │                     │    │ 📊 GLOBAL STATS     │
+│ ├ Select Country    │             │     🌍 3D EARTH     │    │ ├ Total Budget       │
+│ ├ Adjust Emissions  │             │                     │    │ ├ Current Emissions  │
+│ └ Fast Forward      │             │   🛰️ Flying Sats    │    │ └ Overshoot Status  │
+├─────────────────────┤             │                     │    ├─────────────────────┤
+│ 🏛️ COUNTRY PANEL    │             │ Color-coded markers │    │ 🛰️ SATELLITE PANEL │
+│ ├ CO2 Status        │             │ Green: Under limit  │    │ ├ Network Fund: ₿15  │
+│ ├ Bitcoin: ₿50      │             │ Red: Over limit     │    │ ├ Total Satellites   │
+│ ├ Gold: 2000oz      │             │                     │    │ ├ Coverage %         │
+│ └ Allowance Info    │             │ Real Cesium.js      │    │ └ 🚀 Launch Buttons │
+├─────────────────────┤             │ Professional 3D     │    ├─────────────────────┤
+│ 💰 MARKETPLACE      │             │                     │    │ 🗳️ VOTING PANEL     │
+│ ├ CO2 for Sale      │             │ Interactive globe   │    │ ├ Active Proposals   │
+│ ├ Buy/Sell Options  │             │ with realistic     │    │ ├ Vote Progress      │
+│ ├ Price Calculator  │             │ lighting & textures │    │ ├ Trust Satellites   │
+│ └ Trade History     │             │                     │    │ └ Authorize Seizure │
+└─────────────────────┘             └─────────────────────┘    └─────────────────────┘
+
+BOTTOM STATUS BAR:
+🌍 Current Year: 2024 | 🔥 Global Emissions: 39,000 Mt | ⚠️ Budget Remaining: 130,000 Mt | 🚨 Status: CRITICAL
+
+KEY INTERACTIONS:
+• Click countries on globe to select them
+• Drag emission sliders to test violation scenarios  
+• Vote on satellite detections (Trust/Question)
+• Launch satellites to expand monitoring network
+• Buy/sell CO2 certificates in marketplace
+• Fast-forward time to see long-term dynamics
+
+VISUAL STYLE:
+• Dark theme with blue/teal accents
+• Professional space-like aesthetic
+• Clean typography and intuitive icons
+• Smooth animations and transitions
+• Color-coded status indicators
+
+This represents a sophisticated, game-theory-based solution to the tragedy of the commons,
+combining satellite monitoring, democratic governance, and economic enforcement. 
