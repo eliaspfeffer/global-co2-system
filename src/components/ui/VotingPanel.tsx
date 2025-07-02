@@ -51,7 +51,7 @@ const VotingPanel: React.FC = () => {
   return (
     <div className="bg-slate-700 p-4 rounded-xl shadow-lg mt-3 text-white space-y-5">
       <h2 className="text-2xl font-bold text-orange-300 border-b-2 border-orange-500/50 pb-3 mb-3">
-        Penalty Voting Proposals
+        Voting Proposals
       </h2>
 
       {proposalsForDisplay.map((proposal) => {
@@ -77,6 +77,20 @@ const VotingPanel: React.FC = () => {
         let statusMessage = "";
         let statusColor = "text-yellow-300";
         let bgColor = "bg-slate-800";
+        let voteTypeLabel = "";
+        let voteTypeIcon = "";
+
+        // Determine vote type display
+        if (proposal.type === "satellite_detection") {
+          voteTypeLabel = "Satellite Detection Verification";
+          voteTypeIcon = "🛰️";
+        } else if (proposal.type === "bitcoin_seizure") {
+          voteTypeLabel = "Bitcoin Seizure Vote";
+          voteTypeIcon = "⚖️";
+        } else {
+          voteTypeLabel = "Legacy Penalty Vote";
+          voteTypeIcon = "⚠️";
+        }
 
         if (proposal.status === "active") {
           statusMessage = "Voting Active";
@@ -85,7 +99,12 @@ const VotingPanel: React.FC = () => {
           statusColor = "text-green-300";
           bgColor = "bg-green-800/30";
         } else if (proposal.status === "executed") {
-          statusMessage = "Penalty Executed!";
+          statusMessage =
+            proposal.type === "satellite_detection"
+              ? "Detection Confirmed!"
+              : proposal.type === "bitcoin_seizure"
+              ? "Bitcoin Seized!"
+              : "Penalty Executed!";
           statusColor = "text-red-300";
           bgColor = "bg-purple-800/50";
         } else if (proposal.status === "failed") {
@@ -101,10 +120,7 @@ const VotingPanel: React.FC = () => {
           >
             <div className="flex justify-between items-start">
               <h3 className="text-lg font-semibold mb-1">
-                Against:{" "}
-                <span className="font-bold text-red-400">
-                  {targetCountryName}
-                </span>
+                {voteTypeIcon} {voteTypeLabel}
               </h3>
               <span
                 className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColor} ${
@@ -114,13 +130,55 @@ const VotingPanel: React.FC = () => {
                 {statusMessage.toUpperCase()}
               </span>
             </div>
-            <p className="text-xs text-slate-300 mb-1 italic">
-              Reason: Exceeded CO₂ allowance by{" "}
-              {deficitAmount > 0
-                ? deficitAmount.toLocaleString("en-US")
-                : "N/A"}{" "}
-              tons and did not settle via market.
+            <p className="text-md font-semibold text-red-400 mb-2">
+              Target: {targetCountryName}
             </p>
+
+            {proposal.type === "satellite_detection" &&
+              proposal.satelliteData && (
+                <div className="text-xs text-slate-300 mb-2 space-y-1 bg-slate-600/50 p-2 rounded">
+                  <p>
+                    <strong>Detected Emissions:</strong>{" "}
+                    {proposal.satelliteData.detectedEmissions.toLocaleString()}{" "}
+                    tons CO₂
+                  </p>
+                  <p>
+                    <strong>Excess Amount:</strong>{" "}
+                    {proposal.satelliteData.excessAmount.toLocaleString()} tons
+                  </p>
+                  <p>
+                    <strong>Satellite Coverage:</strong>{" "}
+                    {Math.round(proposal.satelliteData.coverageLevel * 100)}%
+                  </p>
+                  <p>
+                    <strong>Detecting Satellites:</strong>{" "}
+                    {proposal.satelliteData.detectingSatellites.length} active
+                  </p>
+                  <p className="italic text-amber-300">
+                    Countries must vote whether to trust this satellite data.
+                  </p>
+                </div>
+              )}
+
+            {proposal.type === "bitcoin_seizure" && (
+              <div className="text-xs text-slate-300 mb-2 bg-red-900/30 p-2 rounded">
+                <p className="italic text-red-300">
+                  This country refused to purchase CO₂ reserves to cover excess
+                  emissions. Vote to authorize Bitcoin seizure via
+                  multisignature wallet for carbon offset purchases.
+                </p>
+              </div>
+            )}
+
+            {!proposal.type && (
+              <p className="text-xs text-slate-300 mb-1 italic">
+                Reason: Exceeded CO₂ allowance by{" "}
+                {deficitAmount > 0
+                  ? deficitAmount.toLocaleString("en-US")
+                  : "N/A"}{" "}
+                tons and did not settle via market.
+              </p>
+            )}
             <p className="text-xs text-slate-400 mb-2">
               Initiated: {new Date(proposal.createdAt).toLocaleTimeString()}{" "}
               {new Date(proposal.createdAt).toLocaleDateString()}
@@ -158,13 +216,21 @@ const VotingPanel: React.FC = () => {
                     onClick={() => handleVote(proposal.targetCountryId, "yes")}
                     className="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-3 rounded-md shadow hover:shadow-md transform hover:scale-105 transition-all"
                   >
-                    Vote Yes (Punish)
+                    {proposal.type === "satellite_detection"
+                      ? "Trust Satellites"
+                      : proposal.type === "bitcoin_seizure"
+                      ? "Authorize Seizure"
+                      : "Vote Yes (Punish)"}
                   </button>
                   <button
                     onClick={() => handleVote(proposal.targetCountryId, "no")}
                     className="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-3 rounded-md shadow hover:shadow-md transform hover:scale-105 transition-all"
                   >
-                    Vote No (Spare)
+                    {proposal.type === "satellite_detection"
+                      ? "Question Data"
+                      : proposal.type === "bitcoin_seizure"
+                      ? "Reject Seizure"
+                      : "Vote No (Spare)"}
                   </button>
                 </div>
               )}
