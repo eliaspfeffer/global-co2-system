@@ -1,0 +1,47 @@
+[
+  {
+    "id": "usa",
+    "name": "United States",
+    "initialCo2Allowance": 1000,
+    "currentCo2Emissions": 950,
+    "conceptualBitcoinDeposit": 50,
+    "conceptualGoldDeposit": 2000,
+    "position": { "lat": 38.9637, "lon": -95.7129 }
+  },
+  {
+    "id": "china",
+    "name": "China",
+    "initialCo2Allowance": 1200,
+    "currentCo2Emissions": 1250,
+    "conceptualBitcoinDeposit": 60,
+    "conceptualGoldDeposit": 2200,
+    "position": { "lat": 35.8617, "lon": 104.1954 }
+  },
+  {
+    "id": "germany",
+    "name": "Germany",
+    "initialCo2Allowance": 400,
+    "currentCo2Emissions": 380,
+    "conceptualBitcoinDeposit": 30,
+    "conceptualGoldDeposit": 1500,
+    "position": { "lat": 51.1657, "lon": 10.4515 }
+  },
+  {
+    "id": "india",
+    "name": "India",
+    "initialCo2Allowance": 700,
+    "currentCo2Emissions": 720,
+    "conceptualBitcoinDeposit": 40,
+    "conceptualGoldDeposit": 1800,
+    "position": { "lat": 20.5937, "lon": 78.9629 }
+  },
+  {
+    "id": "brazil",
+    "name": "Brazil",
+    "initialCo2Allowance": 300,
+    "currentCo2Emissions": 280,
+    "conceptualBitcoinDeposit": 25,
+    "conceptualGoldDeposit": 1200,
+    "position": { "lat": -14.2350, "lon": -51.9253 }
+  }
+]
