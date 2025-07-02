@@ -1,28 +1,18 @@
 "use client";
 
-import React from 'react';
-import { useAppStore } from '@/store/store';
+import React from "react";
+import { useAppStore } from "@/store/store";
 
 const Controls: React.FC = () => {
-  const {
-    countries,
-    selectedCountryId,
-    selectCountry,
-    adjustEmissions,
-    fastForwardTime,
-    resetScenario,
-    currentYear
-  } = useAppStore(state => ({
-    countries: state.countries,
-    selectedCountryId: state.selectedCountryId,
-    selectCountry: state.selectCountry,
-    adjustEmissions: state.adjustEmissions,
-    fastForwardTime: state.fastForwardTime,
-    resetScenario: state.resetScenario,
-    currentYear: state.currentYear,
-  }));
+  const countries = useAppStore((state) => state.countries);
+  const selectedCountryId = useAppStore((state) => state.selectedCountryId);
+  const selectCountry = useAppStore((state) => state.selectCountry);
+  const adjustEmissions = useAppStore((state) => state.adjustEmissions);
+  const fastForwardTime = useAppStore((state) => state.fastForwardTime);
+  const resetScenario = useAppStore((state) => state.resetScenario);
+  const currentYear = useAppStore((state) => state.currentYear);
 
-  const selectedCountry = countries.find(c => c.id === selectedCountryId);
+  const selectedCountry = countries.find((c) => c.id === selectedCountryId);
 
   const handleCountryChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     selectCountry(event.target.value || null);
@@ -38,13 +28,19 @@ const Controls: React.FC = () => {
   };
 
   return (
-    <div className="bg-slate-700 p-4 rounded-xl shadow-lg space-y-5"> {/* Changed bg, rounded, shadow, spacing */}
-      <h2 className="text-2xl font-bold text-sky-300 border-b-2 border-sky-500/50 pb-3 mb-3"> {/* Larger, accent color, thicker border */}
+    <div className="bg-slate-700 p-4 rounded-xl shadow-lg space-y-5">
+      {" "}
+      {/* Changed bg, rounded, shadow, spacing */}
+      <h2 className="text-2xl font-bold text-sky-300 border-b-2 border-sky-500/50 pb-3 mb-3">
+        {" "}
+        {/* Larger, accent color, thicker border */}
         Global Controls
       </h2>
-
       <div>
-        <label htmlFor="country-select" className="block text-sm font-medium text-slate-200 mb-1">
+        <label
+          htmlFor="country-select"
+          className="block text-sm font-medium text-slate-200 mb-1"
+        >
           Select Country:
         </label>
         <select
@@ -61,12 +57,20 @@ const Controls: React.FC = () => {
           ))}
         </select>
       </div>
-
       {selectedCountry && (
         <div className="space-y-2 pt-2">
-          <label htmlFor="emission-slider" className="block text-sm font-medium text-slate-200">
-            Adjust Emissions for <span className="font-semibold text-sky-300">{selectedCountry.name}</span>:
-            <span className="text-lg text-sky-200 ml-2">{selectedCountry.currentCo2Emissions.toLocaleString()} tons</span>
+          <label
+            htmlFor="emission-slider"
+            className="block text-sm font-medium text-slate-200"
+          >
+            Adjust Emissions for{" "}
+            <span className="font-semibold text-sky-300">
+              {selectedCountry.name}
+            </span>
+            :
+            <span className="text-lg text-sky-200 ml-2">
+              {selectedCountry.currentCo2Emissions.toLocaleString()} tons
+            </span>
           </label>
           <input
             type="range"
@@ -79,7 +83,6 @@ const Controls: React.FC = () => {
           />
         </div>
       )}
-
       <div className="pt-3 space-y-3">
         <button
           onClick={fastForwardTime}
@@ -94,10 +97,16 @@ const Controls: React.FC = () => {
           Reset Scenario
         </button>
       </div>
-
       <div className="mt-5 p-3 bg-slate-800 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-sky-200 mb-1">Scenario Status:</h3>
-          <p className="text-base text-slate-300">Current Year: <span className="font-bold text-yellow-300 text-xl">{currentYear}</span></p>
+        <h3 className="text-lg font-semibold text-sky-200 mb-1">
+          Scenario Status:
+        </h3>
+        <p className="text-base text-slate-300">
+          Current Year:{" "}
+          <span className="font-bold text-yellow-300 text-xl">
+            {currentYear}
+          </span>
+        </p>
       </div>
     </div>
   );
