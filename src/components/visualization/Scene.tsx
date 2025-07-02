@@ -1,203 +1,291 @@
 "use client";
 
-import React, { useRef, useEffect } from 'react';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { createEarthMesh, EARTH_RADIUS } from './Earth'; // createEarthMesh now returns a group
-import { useAppStore } from '@/store/store';
+import React, { useRef, useEffect, useState } from "react";
+import { useAppStore } from "@/store/store";
 
-const latLonToVector3 = (lat: number, lon: number, radius: number, target?: THREE.Vector3): THREE.Vector3 => {
-  const vec = target || new THREE.Vector3();
-  const latRad = THREE.MathUtils.degToRad(lat);
-  const lonRad = THREE.MathUtils.degToRad(lon);
-  // Y-up coordinate system:
-  // x = R * cos(lat) * sin(lon)
-  // y = R * sin(lat)
-  // z = R * cos(lat) * cos(lon)
-  vec.set(
-    radius * Math.cos(latRad) * Math.sin(lonRad),
-    radius * Math.sin(latRad),
-    radius * Math.cos(latRad) * Math.cos(lonRad)
-  );
-  return vec;
-};
+// Cesium imports
+import * as Cesium from "cesium";
 
 const Scene: React.FC = () => {
-  const mountRef = useRef<HTMLDivElement>(null);
-  const animationFrameId = useRef<number | null>(null);
-  const selectedCountryMarkerRef = useRef<THREE.Mesh | null>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const earthGroupRef = useRef<THREE.Mesh | null>(null); // Earth mesh itself (oceans)
-  const cloudGroupRef = useRef<THREE.Group | null>(null); // Cloud group for independent rotation
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const cesiumViewerRef = useRef<Cesium.Viewer | null>(null);
+  const entitiesRef = useRef<Map<string, Cesium.Entity>>(new Map());
+  const [isGlobeLoaded, setIsGlobeLoaded] = useState(false);
 
   const selectedCountryId = useAppStore((state) => state.selectedCountryId);
   const countries = useAppStore((state) => state.countries);
+  const selectCountry = useAppStore((state) => state.selectCountry);
 
+  // Initialize Cesium 3D Globe
   useEffect(() => {
-    if (!mountRef.current) return;
-    const currentMount = mountRef.current;
+    if (!viewerRef.current) return;
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-    sceneRef.current = scene;
+    try {
+      // Set Cesium's base URL for assets
+      (window as any).CESIUM_BASE_URL = "/cesium/";
 
-    const camera = new THREE.PerspectiveCamera(50, currentMount.clientWidth / currentMount.clientHeight, 0.1, 1000);
-    camera.position.set(0, EARTH_RADIUS * 0.8, EARTH_RADIUS * 3.5); // Adjusted camera
-    camera.lookAt(0,0,0);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    currentMount.appendChild(renderer.domElement);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.minDistance = EARTH_RADIUS + 0.5;
-    controls.maxDistance = EARTH_RADIUS * 7;
-    controls.autoRotate = false; // Disable autoRotate on controls, we'll rotate Earth itself
-    controls.target.set(0,0,0);
-
-    // Earth group (oceans, land, clouds, atmosphere)
-    const earthSystem = createEarthMesh(); // This is the main ocean sphere with children
-    scene.add(earthSystem);
-    earthGroupRef.current = earthSystem; // Store the main Earth mesh (oceans) for its rotation
-
-    // Find the cloud group if we want to rotate it independently
-    const clouds = earthSystem.getObjectByName("Clouds") as THREE.Group;
-    if (clouds) {
-        cloudGroupRef.current = clouds;
-    }
-
-
-    const satellites: THREE.Mesh[] = []; // ... (satellite setup remains largely the same)
-    const satelliteColors = [0xffcc00, 0x00ccff, 0xcc00ff, 0x00ffcc, 0xff00cc];
-    for (let i = 0; i < 5; i++) {
-      const satelliteGeometry = new THREE.SphereGeometry(0.04 * EARTH_RADIUS, 10, 10);
-      const satelliteMaterial = new THREE.MeshToonMaterial({
-        color: satelliteColors[i % satelliteColors.length],
-        emissive: satelliteColors[i % satelliteColors.length],
-        emissiveIntensity: 0.3
+      // Create the Cesium viewer with basic configuration
+      const viewer = new Cesium.Viewer(viewerRef.current, {
+        baseLayerPicker: false,
+        geocoder: false,
+        homeButton: true,
+        sceneModePicker: false,
+        navigationHelpButton: false,
+        animation: false,
+        timeline: false,
+        fullscreenButton: true,
+        vrButton: false,
+        selectionIndicator: true,
+        infoBox: true,
+        shouldAnimate: true,
       });
-      const satellite = new THREE.Mesh(satelliteGeometry, satelliteMaterial);
-      const angle = (i / 5) * Math.PI * 2 + Math.random() * 0.5;
-      const distance = EARTH_RADIUS * 1.4 + Math.random() * EARTH_RADIUS * 0.3;
-      const yOffset = (Math.random() - 0.5) * EARTH_RADIUS * 0.5;
-      satellite.userData = { angle, distance, speed: 0.004 + Math.random() * 0.006, yOffset, orbitPlaneRotation: Math.random() * Math.PI };
-      satellites.push(satellite);
-      scene.add(satellite);
+
+      // Use default Cesium satellite imagery (Bing Maps)
+      // This avoids the configuration complexity and provides good satellite imagery
+
+      // Enable lighting based on sun/moon positions for realistic day/night
+      viewer.scene.globe.enableLighting = true;
+
+      // Set initial camera position to show the whole globe
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(0, 0, 20000000), // View from above equator
+        orientation: {
+          heading: 0,
+          pitch: -Math.PI / 2, // Look down
+          roll: 0,
+        },
+      });
+
+      cesiumViewerRef.current = viewer;
+      setIsGlobeLoaded(true);
+
+      // Handle clicks on empty space to deselect
+      viewer.cesiumWidget.screenSpaceEventHandler.setInputAction(
+        (event: any) => {
+          const pickedObject = viewer.scene.pick(event.position);
+          if (!pickedObject) {
+            selectCountry(null);
+          }
+        },
+        Cesium.ScreenSpaceEventType.LEFT_CLICK
+      );
+    } catch (error) {
+      console.error("Error initializing Cesium:", error);
+      // Fallback message
+      if (viewerRef.current) {
+        viewerRef.current.innerHTML = `
+          <div class="flex items-center justify-center h-full bg-gray-900 text-white">
+            <div class="text-center p-8">
+              <h2 class="text-2xl font-bold mb-4">3D Globe Loading Error</h2>
+              <p class="mb-4">There was an issue loading the 3D globe. Please try refreshing the page.</p>
+              <p class="text-sm text-gray-400">Error: ${error}</p>
+              <p class="text-xs text-gray-500 mt-2">Using Cesium.js for 3D visualization</p>
+            </div>
+          </div>
+        `;
+      }
     }
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
-    directionalLight.position.set(EARTH_RADIUS * 2.5, EARTH_RADIUS * 1.5, EARTH_RADIUS * 2);
-    scene.add(directionalLight);
+    return () => {
+      if (cesiumViewerRef.current && !cesiumViewerRef.current.isDestroyed()) {
+        cesiumViewerRef.current.destroy();
+        cesiumViewerRef.current = null;
+      }
+    };
+  }, [selectCountry]);
 
-    const markerGeometry = new THREE.SphereGeometry(0.06 * EARTH_RADIUS, 16, 16);
-    const markerMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffeb3b, emissive: 0x000000, emissiveIntensity: 0.8,
-      transparent: true, opacity: 0.95, depthTest: false,
+  // Get marker color based on country's CO2 status
+  const getMarkerColor = (country: any): Cesium.Color => {
+    const emissionRatio =
+      country.currentCo2Emissions / country.initialCo2Allowance;
+
+    if (emissionRatio < 0.8) return Cesium.Color.LIME; // Green - well under allowance
+    if (emissionRatio <= 1.0) return Cesium.Color.YELLOW; // Yellow - close to allowance
+    if (emissionRatio <= 1.2) return Cesium.Color.ORANGE; // Orange - slightly over
+    return Cesium.Color.RED; // Red - significantly over
+  };
+
+  // Create or update country markers
+  useEffect(() => {
+    if (!isGlobeLoaded || !cesiumViewerRef.current) return;
+
+    const viewer = cesiumViewerRef.current;
+
+    // Clear existing entities
+    entitiesRef.current.forEach((entity) => {
+      viewer.entities.remove(entity);
     });
-    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-    marker.renderOrder = 10; // Ensure marker is rendered on top
-    marker.visible = false;
-    // Add marker to the Earth group so it rotates with the Earth
-    earthSystem.add(marker);
-    selectedCountryMarkerRef.current = marker;
+    entitiesRef.current.clear();
 
-    const clock = new THREE.Clock();
-    const animate = () => {
-      animationFrameId.current = requestAnimationFrame(animate);
-      const delta = clock.getDelta();
+    // Create markers for each country
+    countries.forEach((country) => {
+      const emissionRatio =
+        country.currentCo2Emissions / country.initialCo2Allowance;
+      const statusText =
+        emissionRatio > 1 ? "OVER ALLOWANCE" : "WITHIN ALLOWANCE";
+      const isSelected = country.id === selectedCountryId;
 
-      // Rotate Earth (oceans, land, atmosphere)
-      if (earthGroupRef.current) {
-        earthGroupRef.current.rotation.y += 0.0005 + delta * 0.02; // Slow rotation
-      }
-      // Rotate clouds independently and slightly faster/slower or different direction
-      if (cloudGroupRef.current) {
-        cloudGroupRef.current.rotation.y += 0.0002 + delta * 0.01;
-        cloudGroupRef.current.rotation.x += delta * 0.005; // Slight wobble for clouds
-      }
-
-      satellites.forEach(s => { /* ... (satellite animation, no change) ... */
-        s.userData.angle += s.userData.speed;
-        const x = Math.cos(s.userData.angle) * s.userData.distance;
-        const z = Math.sin(s.userData.angle) * s.userData.distance;
-        const finalX = x * Math.cos(s.userData.orbitPlaneRotation) - z * Math.sin(s.userData.orbitPlaneRotation);
-        const finalZ = x * Math.sin(s.userData.orbitPlaneRotation) + z * Math.cos(s.userData.orbitPlaneRotation);
-        s.position.set(finalX, s.userData.yOffset + Math.sin(s.userData.angle * 2.5) * EARTH_RADIUS * 0.05, finalZ);
+      const entity = viewer.entities.add({
+        id: country.id,
+        name: country.name,
+        position: Cesium.Cartesian3.fromDegrees(
+          country.position.lon,
+          country.position.lat,
+          10000
+        ),
+        point: {
+          pixelSize: new Cesium.ConstantProperty(isSelected ? 20 : 15),
+          color: new Cesium.ConstantProperty(getMarkerColor(country)),
+          outlineColor: new Cesium.ConstantProperty(
+            isSelected ? Cesium.Color.WHITE : Cesium.Color.BLACK
+          ),
+          outlineWidth: new Cesium.ConstantProperty(isSelected ? 3 : 2),
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+        label: {
+          text: new Cesium.ConstantProperty(country.name),
+          font: new Cesium.ConstantProperty("12pt sans-serif"),
+          fillColor: new Cesium.ConstantProperty(Cesium.Color.WHITE),
+          outlineColor: new Cesium.ConstantProperty(Cesium.Color.BLACK),
+          outlineWidth: new Cesium.ConstantProperty(2),
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.ConstantProperty(
+            new Cesium.Cartesian2(0, -30)
+          ),
+          show: new Cesium.ConstantProperty(isSelected),
+        },
+        description: new Cesium.ConstantProperty(`
+          <div style="font-family: sans-serif; max-width: 300px;">
+            <h3 style="margin: 0 0 10px 0; color: #333;">${country.name}</h3>
+            <p style="margin: 5px 0;"><strong>Current Emissions:</strong> ${country.currentCo2Emissions.toLocaleString()} tons</p>
+            <p style="margin: 5px 0;"><strong>Allowance:</strong> ${country.initialCo2Allowance.toLocaleString()} tons</p>
+            <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: ${
+              emissionRatio > 1 ? "#f44336" : "#4caf50"
+            }; font-weight: bold;">${statusText}</span></p>
+            <p style="margin: 5px 0;"><strong>Ratio:</strong> ${(
+              emissionRatio * 100
+            ).toFixed(1)}%</p>
+            <p style="margin: 10px 0 0 0; font-size: 12px; color: #666;">Click to select this country</p>
+          </div>
+        `),
       });
-      controls.update();
-      renderer.render(scene, camera);
-    };
-    animate();
 
-    const handleResize = () => { /* ... (no change) ... */
-        if (currentMount) {
-            camera.aspect = currentMount.clientWidth / currentMount.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
-        }
-    };
-    window.addEventListener('resize', handleResize);
+      entitiesRef.current.set(country.id, entity);
+    });
 
-    return () => { /* ... (cleanup, no change) ... */
-        window.removeEventListener('resize', handleResize);
-        if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-        controls.dispose();
-        scene.traverse(object => {
-            if (object instanceof THREE.Mesh) {
-            object.geometry.dispose();
-            if (object.material instanceof THREE.Material) object.material.dispose();
-            else if (Array.isArray(object.material)) object.material.forEach(m => m.dispose());
-            }
-        });
-        if (currentMount && renderer.domElement) {
-            try { currentMount.removeChild(renderer.domElement); } catch (e) { /* ignore */ }
-        }
-        renderer.dispose();
-        sceneRef.current = null;
-        earthGroupRef.current = null;
-        cloudGroupRef.current = null;
-    };
-  }, []);
-
-  // Update marker position: Now relative to the earthSystem group
-  useEffect(() => {
-    const marker = selectedCountryMarkerRef.current;
-    // const earth = earthGroupRef.current; // Not strictly needed for marker position if it's child
-    if (!marker || !sceneRef.current ) return;
-
-    const selectedCountry = countries.find(c => c.id === selectedCountryId);
-
-    if (selectedCountry && selectedCountry.position) {
-      const { lat, lon, currentCo2Emissions, initialCo2Allowance } = selectedCountry;
-
-      // Marker position is now local to the earthSystem if it's a child.
-      // The latLonToVector3 should still calculate position on a sphere of EARTH_RADIUS.
-      const markerPositionOnSphere = latLonToVector3(lat, lon, EARTH_RADIUS + 0.03);
-      marker.position.copy(markerPositionOnSphere);
-      // No need to adjust for Earth's rotation if marker is a child of earthSystem.
-
-      marker.visible = true;
-      const emissionRatio = currentCo2Emissions / initialCo2Allowance;
-      let newColorHex = 0xffeb3b;
-      if (emissionRatio < 0.8) newColorHex = 0x4caf50;
-      else if (emissionRatio <= 1.0) newColorHex = 0xffeb3b;
-      else if (emissionRatio <= 1.2) newColorHex = 0xff9800;
-      else newColorHex = 0xf44336;
-      if (marker.material instanceof THREE.MeshStandardMaterial) {
-        marker.material.color.setHex(newColorHex);
-        marker.material.emissive.setHex(newColorHex);
+    // Handle entity selection
+    viewer.selectedEntityChanged.addEventListener(() => {
+      const selectedEntity = viewer.selectedEntity;
+      if (selectedEntity && selectedEntity.id) {
+        selectCountry(selectedEntity.id as string);
       }
-    } else {
-      marker.visible = false;
-    }
-  }, [selectedCountryId, countries]);
+    });
+  }, [countries, isGlobeLoaded, selectedCountryId, selectCountry]);
 
-  return <div ref={mountRef} className="w-full h-full" />;
+  // Update markers when selection changes
+  useEffect(() => {
+    if (!isGlobeLoaded || !cesiumViewerRef.current) return;
+
+    const viewer = cesiumViewerRef.current;
+
+    entitiesRef.current.forEach((entity, countryId) => {
+      const country = countries.find((c) => c.id === countryId);
+      if (country && entity.point && entity.label) {
+        const isSelected = countryId === selectedCountryId;
+
+        // Update point properties
+        (entity.point.pixelSize as any) = new Cesium.ConstantProperty(
+          isSelected ? 20 : 15
+        );
+        (entity.point.outlineWidth as any) = new Cesium.ConstantProperty(
+          isSelected ? 3 : 2
+        );
+        (entity.point.outlineColor as any) = new Cesium.ConstantProperty(
+          isSelected ? Cesium.Color.WHITE : Cesium.Color.BLACK
+        );
+
+        // Show/hide label
+        (entity.label.show as any) = new Cesium.ConstantProperty(isSelected);
+      }
+    });
+
+    // Fly to selected country
+    if (selectedCountryId) {
+      const selectedCountry = countries.find((c) => c.id === selectedCountryId);
+      if (selectedCountry) {
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(
+            selectedCountry.position.lon,
+            selectedCountry.position.lat,
+            5000000 // 5000km altitude for country view
+          ),
+          duration: 2.0,
+        });
+      }
+    }
+  }, [selectedCountryId, countries, isGlobeLoaded]);
+
+  return (
+    <div className="relative w-full h-full">
+      <div ref={viewerRef} className="w-full h-full" />
+
+      {/* Legend */}
+      <div className="absolute bottom-4 left-4 bg-black/80 text-white rounded-lg p-3 shadow-lg">
+        <h4 className="font-semibold text-sm mb-2">CO2 Emission Status</h4>
+        <div className="space-y-1 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-lime-500"></div>
+            <span>Under allowance (&lt;80%)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <span>Near allowance (80-100%)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+            <span>Slightly over (100-120%)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <span>Significantly over (&gt;120%)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Instructions */}
+      <div className="absolute top-4 right-4 bg-black/80 text-white rounded-lg p-3 shadow-lg max-w-xs">
+        <h4 className="font-semibold text-sm mb-1">3D Globe Controls:</h4>
+        <ul className="text-xs space-y-1">
+          <li>
+            • <strong>Rotate:</strong> Left-click + drag
+          </li>
+          <li>
+            • <strong>Zoom:</strong> Mouse wheel or right-click + drag
+          </li>
+          <li>
+            • <strong>Select country:</strong> Click markers
+          </li>
+          <li>
+            • <strong>Home view:</strong> Click home button
+          </li>
+          <li>
+            • <strong>Day/Night:</strong> Realistic lighting
+          </li>
+        </ul>
+      </div>
+
+      {/* Credits */}
+      <div className="absolute bottom-4 right-4 bg-black/80 text-white rounded-lg p-2 text-xs">
+        <div>
+          Powered by <strong>Cesium.js</strong>
+        </div>
+        <div>Satellite Imagery: Cesium/Bing</div>
+        <div className="text-green-400">✓ Completely Free</div>
+      </div>
+    </div>
+  );
 };
 
 export default Scene;

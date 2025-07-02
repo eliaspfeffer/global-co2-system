@@ -2,11 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Cesium CSS for 3D globe */
+@import "cesium/Build/Cesium/Widgets/widgets.css";
+
 /* Basic body styling (can be adjusted or put in layout.tsx via className) */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -14,7 +17,9 @@ body {
 }
 
 /* Ensure html and body take full height for flex layouts */
-html, body, #__next {
+html,
+body,
+#__next {
   height: 100%;
 }
 
@@ -47,7 +52,7 @@ main {
 /* For Firefox */
 .custom-scrollbar {
   scrollbar-width: thin; /* "auto" or "thin" */
-  scrollbar-color: theme('colors.sky.500') theme('colors.slate.700'); /* thumb and track color */
+  scrollbar-color: theme("colors.sky.500") theme("colors.slate.700"); /* thumb and track color */
 }
 
 /* General style for panel headings for consistency if needed, though currently handled in each panel */
