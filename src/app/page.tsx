@@ -9,6 +9,7 @@ import MarketplacePanel from "@/components/ui/MarketplacePanel";
 import VotingPanel from "@/components/ui/VotingPanel";
 import SatellitePanel from "@/components/ui/SatellitePanel";
 import CountriesOverviewPanel from "@/components/ui/CountriesOverviewPanel";
+import Tutorial from "@/components/ui/Tutorial";
 
 export default function Home() {
   return (
@@ -21,10 +22,16 @@ export default function Home() {
         />
       </Head>
 
-      <header className="bg-slate-900 p-3 text-center shadow-lg z-10">
+      {/* Tutorial Component - shows on first visit */}
+      <Tutorial />
+
+      <header className="bg-slate-900 p-3 text-center shadow-lg z-10 relative">
         <h1 className="text-3xl font-bold text-sky-400">
           CO₂ World: A Conceptual Model
         </h1>
+        <div className="absolute top-3 right-4 text-xs text-slate-400">
+          Need help? Click the Tutorial button →
+        </div>
       </header>
 
       <main className="flex-grow flex flex-col md:flex-row relative overflow-hidden">

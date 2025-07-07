@@ -1,6 +1,9 @@
 import { useAppStore } from "../../store/store";
+import { useState } from "react";
 
 const SatellitePanel = () => {
+  const [showSatelliteHelp, setShowSatelliteHelp] = useState(false);
+
   const {
     satelliteCompanies,
     satelliteCoverage,
@@ -20,9 +23,18 @@ const SatellitePanel = () => {
 
   return (
     <div className="bg-slate-700 p-3 rounded-lg text-white">
-      <h3 className="text-sm font-semibold text-slate-200 mb-3">
-        🛰️ Satellite Network
-      </h3>
+      <div className="flex items-center mb-3">
+        <h3 className="text-sm font-semibold text-slate-200">
+          🛰️ Satellite Network
+        </h3>
+        <button
+          onClick={() => setShowSatelliteHelp(true)}
+          className="ml-2 w-4 h-4 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-xs font-bold flex items-center justify-center transition-colors"
+          title="Learn about the Satellite Network"
+        >
+          ?
+        </button>
+      </div>
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
@@ -148,6 +160,116 @@ const SatellitePanel = () => {
         </div>
         <div>📈 Launch costs funded by penalty seizures from violations</div>
       </div>
+
+      {/* Satellite Network Help Modal */}
+      {showSatelliteHelp && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-lg p-6 max-w-2xl max-h-[80vh] overflow-y-auto text-white">
+            <div className="flex justify-between items-start mb-4">
+              <h2 className="text-xl font-bold text-blue-200">
+                🛰️ Satellite Network
+              </h2>
+              <button
+                onClick={() => setShowSatelliteHelp(false)}
+                className="text-slate-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4 text-sm">
+              <p className="text-slate-200">
+                The <strong>Satellite Network</strong> acts as the "blockchain
+                validators" of our CO2 transparency system, continuously
+                monitoring all countries for emission violations.
+              </p>
+
+              <div className="bg-slate-700 p-3 rounded">
+                <h3 className="font-semibold text-green-300 mb-2">
+                  🏢 5 Satellite Companies:
+                </h3>
+                <ul className="space-y-1 text-slate-300">
+                  <li>
+                    • <strong>SkyNet Monitoring</strong> - Global coverage
+                    specialist
+                  </li>
+                  <li>
+                    • <strong>NASA Watch</strong> - Government monitoring
+                    division
+                  </li>
+                  <li>
+                    • <strong>SpaceX Climate Guard</strong> - Private sector
+                    innovation
+                  </li>
+                  <li>
+                    • <strong>Orbit Monitor Co</strong> - Commercial detection
+                    services
+                  </li>
+                  <li>
+                    • <strong>Pi Watch Ltd</strong> - Precision monitoring
+                    technology
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-slate-700 p-3 rounded">
+                <h3 className="font-semibold text-yellow-300 mb-2">
+                  🚀 How Satellite Launches Work:
+                </h3>
+                <ul className="space-y-1 text-slate-300">
+                  <li>
+                    • <strong>Cost:</strong> ₿15 per satellite launch
+                  </li>
+                  <li>
+                    • <strong>Funding:</strong> Comes from Satellite Network
+                    Fund
+                  </li>
+                  <li>
+                    • <strong>Effect:</strong> Higher coverage = Better
+                    detection accuracy
+                  </li>
+                  <li>
+                    • <strong>Rewards:</strong> More satellites = More violation
+                    detections = More Bitcoin earnings
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-blue-900/30 p-3 rounded border border-blue-700/50">
+                <h3 className="font-semibold text-blue-300 mb-2">
+                  📊 Coverage System:
+                </h3>
+                <p className="text-slate-300">
+                  <strong>Low Coverage (30-50%):</strong> Some violations might
+                  be missed
+                  <br />
+                  <strong>Medium Coverage (50-80%):</strong> Most violations
+                  detected
+                  <br />
+                  <strong>High Coverage (80-95%):</strong> Nearly all violations
+                  caught
+                </p>
+              </div>
+
+              <div className="bg-purple-900/30 p-3 rounded border border-purple-700/50">
+                <h3 className="font-semibold text-purple-300 mb-2">
+                  💰 Economic Incentives:
+                </h3>
+                <p className="text-slate-300">
+                  When violations are detected, satellites that monitored that
+                  country get Bitcoin rewards. This creates a self-sustaining
+                  system where better monitoring is rewarded.
+                </p>
+              </div>
+
+              <p className="text-slate-400 text-xs italic">
+                💡 Try launching satellites to see how coverage improves and
+                more violations get detected!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
