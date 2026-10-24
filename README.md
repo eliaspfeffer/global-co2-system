@@ -181,7 +181,7 @@ _🎬 **Full Demo Animation**: Complete end-to-end flow showing violation detect
 
 ## 🛠️ **Technology Stack**
 
-- **Frontend**: Next.js 14 with React 18
+- **Frontend**: Next.js 15.5.28 with React 18.3.1
 - **3D Visualization**: Cesium.js for professional earth rendering
 - **State Management**: Zustand for global state
 - **Styling**: Tailwind CSS for responsive design
@@ -194,7 +194,7 @@ _🎬 **Full Demo Animation**: Complete end-to-end flow showing violation detect
 
 ### **Prerequisites**
 
-- Node.js 18+
+- Node.js 22+ (supported LTS)
 - npm or yarn
 
 ### **Installation**

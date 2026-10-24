@@ -52,3 +52,7 @@ The goal is to create a gamified visualization of a global CO2 emissions cap-and
 *   Prioritize user understanding of the simulation's mechanics.
 *   If adding complex visual assets (textures, models), provide clear instructions on how they should be integrated.
 *   Update this document and `README.md` with any significant changes.
+
+### Security maintenance (2026-10-24)
+
+The production dependency baseline is Next.js 15.5.28 and React 18.3.1, with Sharp 0.35.5 and PostCSS 8.5.31. Use a supported Node.js release (Node.js 22 was used for verification). The simulation and its financial interactions remain conceptual.

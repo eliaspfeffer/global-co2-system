@@ -1,7 +1,9 @@
 "use client";
 
 import Head from "next/head";
-import Scene from "@/components/visualization/Scene";
+import dynamic from "next/dynamic";
+
+const Scene = dynamic(() => import("@/components/visualization/Scene"), { ssr: false });
 import GlobalStatsPanel from "@/components/ui/GlobalStatsPanel"; // Import new panel
 import Controls from "@/components/ui/Controls";
 import CountryPanel from "@/components/ui/CountryPanel";
